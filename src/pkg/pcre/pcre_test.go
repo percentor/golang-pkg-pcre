@@ -3,11 +3,12 @@
 package pcre
 
 import (
+	"fmt"
 	"testing"
 )
 
 func TestCompile(t *testing.T) {
-	var check = func (p string, groups int) {
+	var check = func(p string, groups int) {
 		re, err := Compile(p, 0)
 		if err != nil {
 			t.Error(p, err)
@@ -16,7 +17,7 @@ func TestCompile(t *testing.T) {
 			t.Error(p, g)
 		}
 	}
-	check("",0 )
+	check("", 0)
 	check("^", 0)
 	check("^$", 0)
 	check("()", 1)
@@ -25,7 +26,7 @@ func TestCompile(t *testing.T) {
 }
 
 func TestCompileFail(t *testing.T) {
-	var check = func (p, msg string, off int) {
+	var check = func(p, msg string, off int) {
 		_, err := Compile(p, 0)
 		switch {
 		case err == nil:
@@ -41,26 +42,6 @@ func TestCompileFail(t *testing.T) {
 	check("abc\\", "\\ at end of pattern", 4)
 	check("abc\000", "NUL byte in pattern", 3)
 	check("a\000bc", "NUL byte in pattern", 1)
-}
-
-func strings(b [][]byte) (r []string) {
-	r = make([]string, len(b))
-	for i, v := range b {
-		r[i] = string(v)
-	} 
-	return
-}
-
-func equal(l, r []string) bool {
-	if len(l) != len(r) {
-		return false
-	}
-	for i, lv := range l {
-		if lv != r[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func checkmatch1(t *testing.T, dostring bool, m *Matcher,
@@ -91,7 +72,7 @@ func checkmatch1(t *testing.T, dostring bool, m *Matcher,
 			t.Error(prefix, pattern, subject, "Matches")
 			return
 		}
-		if m.Groups() != len(args) - 1 {
+		if m.Groups() != len(args)-1 {
 			t.Error(prefix, pattern, subject, "Groups", m.Groups())
 			return
 		}
@@ -180,16 +161,47 @@ func TestFindIndex(t *testing.T) {
 	}
 }
 
+func TestReplace(t *testing.T) {
+	re := MustCompile("foo", 0)
+	// Don't change at ends.
+	result := re.Replace([]byte("I like foods."), []byte("car"), 0)
+	if string(result) != "I like cards." {
+		t.Error("ReplaceAll", result)
+	}
+	// Change at ends.
+	result = re.Replace([]byte("food fight fools foo"), []byte("car"), 0)
+	if string(result) != "card fight fools foo" {
+		t.Error("ReplaceAll2", result)
+	}
+}
+
 func TestReplaceAll(t *testing.T) {
 	re := MustCompile("foo", 0)
 	// Don't change at ends.
 	result := re.ReplaceAll([]byte("I like foods."), []byte("car"), 0)
 	if string(result) != "I like cards." {
-		t.Error ("ReplaceAll", result)
+		t.Error("ReplaceAll", result)
 	}
 	// Change at ends.
 	result = re.ReplaceAll([]byte("food fight fools foo"), []byte("car"), 0)
 	if string(result) != "card fight carls car" {
 		t.Error("ReplaceAll2", result)
 	}
+
+	re = MustCompile("abc", 0)
+	// Change at ends.
+	result = re.ReplaceAll([]byte("abc abc abc abc"), []byte("qwe"), 0)
+	if string(result) != "qwe qwe qwe qwe" {
+		t.Error("ReplaceAll3", result)
+	}
+}
+
+func TestMatchAll(t *testing.T) {
+	re := MustCompile("ab*c", 0)
+	// Change at ends.
+	result := re.MatchAll([]byte("qw abc abc ac qw"), 0)
+	fmt.Println(result)
+	//if string(result) != "abc abc abc" {
+	//	t.Error("ReplaceAll3", result)
+	//}
 }
